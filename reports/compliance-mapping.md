@@ -1,10 +1,10 @@
-# Compliance mapping — điền trong checkpoint 5
+# Compliance mapping học tập
 
-| Nguồn / yêu cầu | Control đã làm | Evidence file:dòng | Giới hạn |
+| Nguồn / chủ đề | Control đã làm | Evidence file:dòng thật | Giới hạn |
 |---|---|---|---|
-| Luật 91/2025/QH15 | | | |
-| NĐ 356/2025/NĐ-CP | | | |
-| Luật AI 134/2025/QH15 | | | |
-| OWASP ASI01, ASI03, ASI04 | | | |
+| [Luật Bảo vệ dữ liệu cá nhân 91/2025/QH15](https://vanban.chinhphu.vn/?classid=1&docid=214590&pageid=27160&typegroup=) — bảo vệ dữ liệu cá nhân | PII gate phát hiện/che CCCD, điện thoại, tài khoản và email; policy chặn restricted egress; ledger không lưu tham số thô. | `agent/pii.py:59`, `agent/pii.py:106`; `agent/policy.py:84-91`; `agent/runner.py:84-96` | Chỉ là mô phỏng trên dữ liệu synthetic. Chưa đối chiếu toàn văn để gắn control với điều khoản cụ thể; không phải chứng nhận tuân thủ. |
+| [Nghị định 356/2025/NĐ-CP](https://chinhphu.vn/?classid=1&docid=216387&pageid=27160&typegroupid=4) — biện pháp thi hành Luật Bảo vệ dữ liệu cá nhân | Tách untrusted ticket khỏi private store; chỉ ticket ID typed đi qua boundary; gate trước private index và từng lần đọc hồ sơ. | `agent/runner.py:159-189`, `agent/runner.py:200-215`; `reports/verification.md:69-70` | Chưa xác minh điều khoản chi tiết của văn bản gốc; không đánh giá quy trình tổ chức, hồ sơ pháp lý hay chuyển dữ liệu thực tế. |
+| [Luật Trí tuệ nhân tạo 134/2025/QH15](https://vanban.chinhphu.vn/?classid=1&docid=216334&orggroupid=1&pageid=27160) — quản trị và kiểm soát rủi ro AI | Quyền OBO theo principal/purpose/scope/TTL, quyết định có reason, replay injection và bằng chứng before/after. | `agent/policy.py:84-139`; `agent/runner.py:51-128`; `tests/test_injection.py:71`, `tests/test_injection.py:122-138` | Mock LLM và principal fixture không chứng minh authentication, giám sát hay tuân thủ hệ thống production. Chưa gắn điều khoản cụ thể vì chưa đối chiếu toàn văn. |
+| [OWASP Agentic Top 10](https://genai.owasp.org/2025/12/09/owasp-top-10-for-agentic-applications-the-benchmark-for-agentic-security-in-the-age-of-autonomous-ai/) — ASI01 Agent Goal Hijack, ASI03 Identity & Privilege Abuse, ASI04 Agentic Supply Chain | ASI01: typed boundary + deny egress; ASI03: OBO least privilege/delegation/TTL; ASI04: hash-pinned lock, pinned Gitleaks hook và scan lịch sử/working tree. | `agent/runner.py:159-229`; `agent/policy.py:105-139`; `requirements.lock:213`, `requirements.lock:217`; `.pre-commit-config.yaml:2-6`; `reports/secrets-incident.md:1` | Mapping kiểm soát của lab, không phải đánh giá OWASP đầy đủ; chưa kiểm ký artifact, SBOM, provenance hoặc MCP runtime. |
 
-Chỉ ghi điều khoản cụ thể khi đã đối chiếu văn bản gốc. Mô phỏng kỹ thuật không tự chứng minh tuân thủ pháp luật.
+Các trang nguồn chính thức xác nhận tên/số hiệu văn bản. Bảng cố ý không viện dẫn điều khoản pháp luật cụ thể khi chưa đọc và đối chiếu toàn văn. Đây không phải ý kiến pháp lý hay chứng nhận tuân thủ.

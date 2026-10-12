@@ -37,12 +37,89 @@ rồi gọi verify() phải trả về False.
 """
 from __future__ import annotations
 
+import hashlib
+import json
 from pathlib import Path
+
+ZERO_HASH = "0" * 64
+REQUIRED_FIELDS = frozenset({
+    "ts",
+    "agent_id",
+    "run_id",
+    "tool",
+    "args_hash",
+    "classification",
+    "decision",
+    "reason",
+})
+
+
+def _compute_hash(entry_without_hash: dict) -> str:
+    content = json.dumps(entry_without_hash, sort_keys=True, ensure_ascii=False)
+    return hashlib.sha256(content.encode("utf-8")).hexdigest()
 
 
 def append(entry: dict, path: Path) -> dict:
-    raise NotImplementedError("BƯỚC 3d: implement ledger append")
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    prev_hash = ZERO_HASH
+    if path.exists() and path.stat().st_size > 0:
+        lines = [line.strip() for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+        if lines:
+            last_entry = json.loads(lines[-1])
+            prev_hash = last_entry.get("hash", ZERO_HASH)
+
+    record = dict(entry)
+    record["prev_hash"] = prev_hash
+    record.pop("hash", None)
+
+    record["hash"] = _compute_hash(record)
+
+    with path.open("a", encoding="utf-8") as f:
+        f.write(json.dumps(record, ensure_ascii=False) + "\n")
+
+    return record
 
 
 def verify(path: Path) -> bool:
-    raise NotImplementedError("BƯỚC 3d: implement ledger verify")
+    path = Path(path)
+    if not path.exists():
+        return True
+
+    lines = [line.strip() for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    if not lines:
+        return True
+
+    expected_prev = ZERO_HASH
+
+    for line in lines:
+        try:
+            entry = json.loads(line)
+        except json.JSONDecodeError:
+            return False
+
+        if not isinstance(entry, dict) or not REQUIRED_FIELDS.issubset(entry):
+            return False
+
+        # Kiểm tra non-empty reason
+        reason = entry.get("reason")
+        if not reason or not str(reason).strip():
+            return False
+
+        # Kiểm tra prev_hash liên kết
+        if entry.get("prev_hash") != expected_prev:
+            return False
+
+        # Kiểm tra tính toàn vẹn của hash
+        stored_hash = entry.get("hash")
+        if not stored_hash:
+            return False
+
+        to_check = {k: v for k, v in entry.items() if k != "hash"}
+        if _compute_hash(to_check) != stored_hash:
+            return False
+
+        expected_prev = stored_hash
+
+    return True
